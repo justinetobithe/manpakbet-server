@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 
 class WalletController extends Controller
 {
-    public const METHODS = ['gcash', 'maya', 'bank', 'qrph'];
+    public const METHODS = ['gcash', 'maya'];
 
     public const MIN_DEPOSIT = 100;
 

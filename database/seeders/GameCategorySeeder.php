@@ -10,24 +10,19 @@ class GameCategorySeeder extends Seeder
     public function run(): void
     {
         $categories = [
-            ['name' => 'Popular Games', 'slug' => 'popular', 'icon' => 'flame', 'sort_order' => 1],
-            ['name' => 'Live Games', 'slug' => 'live', 'icon' => 'video', 'sort_order' => 2],
-            ['name' => 'Slot Games', 'slug' => 'slot', 'icon' => 'gamepad', 'sort_order' => 3],
-            ['name' => 'New Games', 'slug' => 'new', 'icon' => 'sparkles', 'sort_order' => 4],
-            ['name' => 'Fishing', 'slug' => 'fishing', 'icon' => 'fish', 'sort_order' => 5],
-            ['name' => 'Sports', 'slug' => 'sports', 'icon' => 'trophy', 'sort_order' => 6],
-            ['name' => 'Poker', 'slug' => 'poker', 'icon' => 'spade', 'sort_order' => 7],
+            ['name' => 'Hot Games', 'slug' => 'popular', 'icon' => 'flame'],
+            ['name' => 'Slot Games', 'slug' => 'slot', 'icon' => 'gamepad'],
+            ['name' => 'Live Casino', 'slug' => 'live', 'icon' => 'video'],
+            ['name' => 'Fishing', 'slug' => 'fishing', 'icon' => 'fish'],
+            ['name' => 'New Games', 'slug' => 'new', 'icon' => 'sparkles'],
+            ['name' => 'Poker', 'slug' => 'poker', 'icon' => 'spade'],
+            ['name' => 'Sports', 'slug' => 'sports', 'icon' => 'trophy'],
         ];
 
-        foreach ($categories as $c) {
-            GameCategory::updateOrCreate(
-                ['slug' => $c['slug']],
-                [
-                    'name' => $c['name'],
-                    'icon' => $c['icon'],
-                    'sort_order' => $c['sort_order'],
-                    'is_active' => true,
-                ]
+        foreach ($categories as $index => $category) {
+            GameCategory::query()->updateOrCreate(
+                ['slug' => $category['slug']],
+                $category + ['sort_order' => $index + 1, 'is_active' => true]
             );
         }
     }

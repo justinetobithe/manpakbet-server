@@ -4,27 +4,27 @@ namespace Database\Seeders;
 
 use App\Models\GameProvider;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class GameProviderSeeder extends Seeder
 {
+    private const FEATURED = ['pg-soft', 'jili', 'pragmatic-play', 'evolution'];
+
     public function run(): void
     {
-        $providers = [
-            ['name' => 'JILI', 'slug' => 'jili', 'logo' => '/providers/jili.png', 'sort_order' => 1],
-            ['name' => 'Pragmatic Play', 'slug' => 'pragmatic-play', 'logo' => '/providers/pragmatic.png', 'sort_order' => 2],
-            ['name' => 'PG Soft', 'slug' => 'pgsoft', 'logo' => '/providers/pgsoft.png', 'sort_order' => 3],
-        ];
+        $providers = collect(GameCatalog::load())
+            ->groupBy('provider_slug')
+            ->map(fn ($games) => ['name' => $games->first()['provider'], 'count' => $games->count()])
+            ->sortByDesc('count');
 
-        foreach ($providers as $p) {
-            GameProvider::updateOrCreate(
-                ['slug' => $p['slug']],
-                [
-                    'name' => $p['name'],
-                    'logo' => $p['logo'],
-                    'sort_order' => $p['sort_order'],
-                    'is_active' => true,
-                ]
+        $ordered = collect(self::FEATURED)
+            ->filter(fn ($slug) => $providers->has($slug))
+            ->merge($providers->keys()->diff(self::FEATURED))
+            ->values();
+
+        foreach ($ordered as $index => $slug) {
+            GameProvider::query()->updateOrCreate(
+                ['slug' => $slug],
+                ['name' => $providers[$slug]['name'], 'sort_order' => $index + 1, 'is_active' => true]
             );
         }
     }

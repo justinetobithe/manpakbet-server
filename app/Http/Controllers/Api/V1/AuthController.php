@@ -176,8 +176,12 @@ class AuthController extends Controller
 
         $user->forceFill(['last_login_at' => now()])->save();
 
+        $minutes = (int) config('sanctum.expiration');
+        $expiresAt = $minutes > 0 ? now()->addMinutes($minutes) : null;
+
         return $this->success([
-            'token' => $user->createToken('api')->plainTextToken,
+            'token' => $user->createToken('api', ['*'], $expiresAt)->plainTextToken,
+            'expires_at' => $expiresAt?->toIso8601String(),
             'user' => $user->fresh()->toAuthArray(),
         ], $status === 201 ? 'Account created successfully' : 'Signed in successfully', $status);
     }

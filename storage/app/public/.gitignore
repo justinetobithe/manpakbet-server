@@ -1,2 +1,5 @@
 *
 !.gitignore
+!games/
+!games/**
+games/*-banner.webp

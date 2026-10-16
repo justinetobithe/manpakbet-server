@@ -16,6 +16,8 @@ class Game extends Model
         'thumbnail',
         'banner',
         'launch_url',
+        'provider_game_code',
+        'has_demo',
         'badge',
         'is_featured',
         'plays_count',
@@ -26,6 +28,7 @@ class Game extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
+        'has_demo' => 'boolean',
         'sort_order' => 'integer',
         'plays_count' => 'integer',
     ];

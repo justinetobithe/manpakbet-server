@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\GameCategoryController;
 use App\Http\Controllers\Api\V1\GameController;
 use App\Http\Controllers\Api\V1\GameProviderController;
 use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\ProviderWalletController;
 use App\Http\Controllers\Api\V1\WalletController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +33,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/games/{slug}', [GameController::class, 'show']);
     });
 
+    Route::post('/provider/{driver}/wallet/{action}', ProviderWalletController::class)
+        ->whereIn('action', ['balance', 'debit', 'credit', 'rollback'])
+        ->middleware('throttle:600,1');
+
     Route::prefix('content')->group(function () {
         Route::get('/banners', [ContentController::class, 'banners']);
         Route::get('/promotions', [ContentController::class, 'promotions']);
@@ -45,7 +50,9 @@ Route::prefix('v1')->group(function () {
         Route::put('/me', [ProfileController::class, 'update']);
         Route::put('/me/password', [ProfileController::class, 'password']);
 
-        Route::post('/casino/games/{slug}/launch', [GameController::class, 'launch']);
+        Route::post('/casino/games/{slug}/launch', [GameController::class, 'launch'])->middleware('throttle:20,1');
+        Route::post('/casino/sessions/end', [GameController::class, 'endSession']);
+        Route::get('/casino/rounds', [GameController::class, 'rounds']);
 
         Route::prefix('wallet')->group(function () {
             Route::get('/', [WalletController::class, 'summary']);

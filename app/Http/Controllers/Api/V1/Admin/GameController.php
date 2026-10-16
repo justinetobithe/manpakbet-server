@@ -34,6 +34,8 @@ class GameController extends ResourceController
             'thumbnail' => ['nullable', 'string', 'max:500'],
             'banner' => ['nullable', 'string', 'max:500'],
             'launch_url' => ['nullable', 'string', 'max:500'],
+            'provider_game_code' => ['nullable', 'string', 'max:120'],
+            'has_demo' => ['boolean'],
             'badge' => ['nullable', Rule::in(['hot', 'new', 'top', 'jackpot'])],
             'is_featured' => ['boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],

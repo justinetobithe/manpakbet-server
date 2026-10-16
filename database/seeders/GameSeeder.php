@@ -43,6 +43,7 @@ class GameSeeder extends Seeder
                         'thumbnail' => $game['image'],
                         'banner' => $game['image'],
                         'launch_url' => null,
+                        'has_demo' => !in_array($game['category'], ['live', 'sports'], true),
                         'sort_order' => isset($hot[$game['slug']]) ? $hot[$game['slug']] + 1 : $sort[$category],
                         'plays_count' => max(120, (int) round(($total - $game['rank'] + 1) / $total * 48000) + crc32($game['slug']) % 900),
                         'is_active' => true,

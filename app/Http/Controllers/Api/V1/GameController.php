@@ -4,8 +4,14 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Game;
+use App\Models\GameRound;
+use App\Models\GameSession;
+use App\Services\Games\GameLaunchService;
+use App\Services\Games\GameProviderException;
+use App\Services\Games\GameProviderManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class GameController extends Controller
 {
@@ -65,16 +71,51 @@ class GameController extends Controller
         return $this->success($game, 'Game retrieved', 200, ['related' => $related]);
     }
 
-    public function launch(Request $request, string $slug): JsonResponse
+    public function launch(Request $request, string $slug, GameLaunchService $launcher, GameProviderManager $providers): JsonResponse
     {
-        $game = Game::query()->where('slug', $slug)->where('is_active', true)->firstOrFail();
+        $data = $request->validate(['mode' => ['nullable', Rule::in([GameSession::MODE_REAL, GameSession::MODE_DEMO])]]);
+        $game = Game::query()->with(self::RELATIONS)->where('slug', $slug)->where('is_active', true)->firstOrFail();
+        $user = $request->user();
+        $mode = $data['mode'] ?? GameSession::MODE_REAL;
 
-        $game->increment('plays_count');
+        if ($mode === GameSession::MODE_REAL && (float) $user->balance <= 0) {
+            return $this->error('Top up your wallet to play for real, or try the demo.', 422, null, ['code' => 'INSUFFICIENT_FUNDS']);
+        }
+
+        try {
+            $session = $launcher->launch($user, $game, $mode, $request);
+        } catch (GameProviderException $e) {
+            return $this->error($e->getMessage(), $e->status(), null, ['code' => $e->errorCode()]);
+        }
+
+        $driver = $providers->driver($session->driver);
 
         return $this->success([
+            'session' => $session->only(['token', 'mode', 'expires_at']),
             'game' => $game,
-            'launch_url' => $game->launch_url,
-            'balance' => (float) $request->user()->balance,
-        ], 'Game session ready');
+            'launch_url' => $session->launch_url,
+            'provider' => ['key' => $driver->key(), 'name' => $driver->name(), 'connected' => $driver->isConfigured()],
+            'balance' => (float) $user->fresh()->balance,
+        ], $session->launch_url ? 'Game session ready' : 'Game provider is not connected yet');
+    }
+
+    public function endSession(Request $request, GameLaunchService $launcher): JsonResponse
+    {
+        $data = $request->validate(['token' => ['required', 'string']]);
+
+        $launcher->end($request->user(), $data['token']);
+
+        return $this->success(null, 'Game session ended');
+    }
+
+    public function rounds(Request $request): JsonResponse
+    {
+        $paginator = GameRound::query()
+            ->with('game:id,name,slug,thumbnail,banner')
+            ->where('user_id', $request->user()->id)
+            ->latest('id')
+            ->paginate(min(max((int) $request->query('per_page', 15), 1), 50));
+
+        return $this->paginated($paginator, 'Game history retrieved');
     }
 }

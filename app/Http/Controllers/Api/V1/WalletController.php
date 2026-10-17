@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Events\TransactionRequested;
 use App\Http\Controllers\Controller;
+use App\Models\PayoutAccount;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Support\GameStats;
+use App\Support\Realtime;
 use App\Support\Settings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,7 +30,19 @@ class WalletController extends Controller
             'id' => $method,
             'account_name' => Settings::get("payments.{$method}_account_name"),
             'account_number' => Settings::get("payments.{$method}_account_number"),
+            'qr' => Settings::get("payments.{$method}_qr") ?: null,
         ], $this->methods());
+    }
+
+    public function show(Request $request, string $reference): JsonResponse
+    {
+        $transaction = $request->user()->transactions()->where('reference', $reference)->firstOrFail();
+        $channel = collect($this->channels())->firstWhere('id', $transaction->method);
+
+        return $this->success([
+            'transaction' => $this->masked($transaction),
+            'channel' => $channel,
+        ], 'Transaction retrieved');
     }
 
     public function summary(Request $request): JsonResponse
@@ -67,7 +82,9 @@ class WalletController extends Controller
             $query->where('status', $status);
         }
 
-        return $this->paginated($query->paginate(min(max((int) $request->query('per_page', 10), 1), 50)), 'Transactions retrieved');
+        $page = $query->paginate(min(max((int) $request->query('per_page', 10), 1), 50))->through(fn (Transaction $transaction) => $this->masked($transaction));
+
+        return $this->paginated($page, 'Transactions retrieved');
     }
 
     public function deposit(Request $request): JsonResponse
@@ -88,6 +105,8 @@ class WalletController extends Controller
             'account_number' => $data['account_number'] ?? null,
         ]);
 
+        Realtime::dispatch(new TransactionRequested($transaction));
+
         return $this->created($transaction, 'Deposit request submitted');
     }
 
@@ -99,12 +118,22 @@ class WalletController extends Controller
 
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:' . Settings::get('payments.min_withdraw'), 'max:' . Settings::get('payments.max_withdraw')],
-            'method' => ['required', Rule::in($this->methods())],
-            'account_name' => ['required', 'string', 'max:100'],
-            'account_number' => ['required', 'string', 'max:50'],
+            'payout_account_id' => ['required', 'integer'],
+        ], [
+            'payout_account_id.required' => 'Select a payout account',
         ]);
 
-        $transaction = DB::transaction(function () use ($request, $data) {
+        $account = $request->user()->payoutAccounts()->find($data['payout_account_id']);
+
+        if (!$account) {
+            $this->fail('Select a valid payout account', 422, ['payout_account_id' => ['Select a valid payout account']]);
+        }
+
+        if (!in_array($account->method, $this->methods(), true)) {
+            $this->fail(strtoupper($account->method) . ' payouts are currently unavailable', 422, ['payout_account_id' => ['This payment channel is currently unavailable']]);
+        }
+
+        $transaction = DB::transaction(function () use ($request, $data, $account) {
             $user = User::query()->lockForUpdate()->findOrFail($request->user()->id);
             $amount = round((float) $data['amount'], 2);
 
@@ -118,14 +147,24 @@ class WalletController extends Controller
             return $user->transactions()->create([
                 'type' => Transaction::TYPE_WITHDRAW,
                 'status' => Transaction::STATUS_PENDING,
+                'payout_account_id' => $account->id,
                 'amount' => $amount,
-                'method' => $data['method'],
-                'account_name' => $data['account_name'],
-                'account_number' => $data['account_number'],
+                'method' => $account->method,
+                'account_name' => $account->account_name,
+                'account_number' => $account->account_number,
             ]);
         });
 
-        return $this->created($transaction, 'Withdrawal request submitted');
+        Realtime::dispatch(new TransactionRequested($transaction));
+
+        return $this->created($this->masked($transaction), 'Withdrawal request submitted');
+    }
+
+    private function masked(Transaction $transaction): Transaction
+    {
+        $transaction->account_number = PayoutAccount::mask($transaction->account_number);
+
+        return $transaction;
     }
 
     public function history(Request $request): JsonResponse

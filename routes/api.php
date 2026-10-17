@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\GameCategoryController;
 use App\Http\Controllers\Api\V1\GameController;
 use App\Http\Controllers\Api\V1\GameProviderController;
 use App\Http\Controllers\Api\V1\KycController;
+use App\Http\Controllers\Api\V1\PayoutAccountController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ProviderWalletController;
 use App\Http\Controllers\Api\V1\WalletController;
@@ -54,6 +55,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/me/kyc', [KycController::class, 'show']);
         Route::post('/me/kyc', [KycController::class, 'store'])->middleware('throttle:5,1');
         Route::get('/me/history', [WalletController::class, 'history']);
+        Route::get('/me/payout-accounts', [PayoutAccountController::class, 'index']);
+        Route::post('/me/payout-accounts', [PayoutAccountController::class, 'store'])->middleware('throttle:10,1');
+        Route::put('/me/payout-accounts/{id}', [PayoutAccountController::class, 'update'])->whereNumber('id');
+        Route::delete('/me/payout-accounts/{id}', [PayoutAccountController::class, 'destroy'])->whereNumber('id');
 
         Route::post('/casino/games/{slug}/launch', [GameController::class, 'launch'])->middleware('throttle:20,1');
         Route::post('/casino/sessions/end', [GameController::class, 'endSession']);
@@ -62,6 +67,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('wallet')->group(function () {
             Route::get('/', [WalletController::class, 'summary']);
             Route::get('/transactions', [WalletController::class, 'transactions']);
+            Route::get('/transactions/{reference}', [WalletController::class, 'show']);
             Route::post('/deposit', [WalletController::class, 'deposit'])->middleware('throttle:6,1');
             Route::post('/withdraw', [WalletController::class, 'withdraw'])->middleware('throttle:6,1');
         });

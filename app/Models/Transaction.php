@@ -19,6 +19,7 @@ class Transaction extends Model
 
     protected $fillable = [
         'user_id',
+        'payout_account_id',
         'reference',
         'type',
         'method',

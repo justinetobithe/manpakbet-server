@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
+use App\Events\TransactionUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Support\Realtime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -57,6 +59,8 @@ class TransactionController extends Controller
             return $this->finalize($transaction, Transaction::STATUS_APPROVED, $request);
         });
 
+        $this->notify($transaction);
+
         return $this->success($transaction, 'Transaction approved');
     }
 
@@ -75,6 +79,8 @@ class TransactionController extends Controller
 
             return $this->finalize($transaction, Transaction::STATUS_REJECTED, $request);
         });
+
+        $this->notify($transaction);
 
         return $this->success($transaction, 'Transaction rejected');
     }
@@ -103,5 +109,10 @@ class TransactionController extends Controller
         $transaction->save();
 
         return $transaction->load(self::RELATIONS);
+    }
+
+    private function notify(Transaction $transaction): void
+    {
+        Realtime::dispatch(new TransactionUpdated($transaction, (float) User::query()->whereKey($transaction->user_id)->value('balance')));
     }
 }

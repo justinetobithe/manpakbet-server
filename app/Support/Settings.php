@@ -22,10 +22,12 @@ class Settings
         'payments' => [
             'gcash_enabled' => ['type' => 'bool', 'default' => true, 'rules' => ['boolean'], 'public' => true],
             'gcash_account_name' => ['type' => 'string', 'default' => 'ManpakBet Payments', 'rules' => ['nullable', 'string', 'max:100'], 'public' => true],
-            'gcash_account_number' => ['type' => 'string', 'default' => '0917 000 0000', 'rules' => ['nullable', 'string', 'max:30'], 'public' => true],
+            'gcash_account_number' => ['type' => 'string', 'default' => '09276192326', 'rules' => ['nullable', 'string', 'max:30'], 'public' => true],
+            'gcash_qr' => ['type' => 'string', 'default' => '', 'rules' => ['nullable', 'string', 'max:255'], 'public' => true],
             'maya_enabled' => ['type' => 'bool', 'default' => true, 'rules' => ['boolean'], 'public' => true],
             'maya_account_name' => ['type' => 'string', 'default' => 'ManpakBet Payments', 'rules' => ['nullable', 'string', 'max:100'], 'public' => true],
             'maya_account_number' => ['type' => 'string', 'default' => '0918 000 0000', 'rules' => ['nullable', 'string', 'max:30'], 'public' => true],
+            'maya_qr' => ['type' => 'string', 'default' => '', 'rules' => ['nullable', 'string', 'max:255'], 'public' => true],
             'require_kyc_for_withdraw' => ['type' => 'bool', 'default' => true, 'rules' => ['boolean'], 'public' => true],
             'min_deposit' => ['type' => 'int', 'default' => 100, 'rules' => ['required', 'integer', 'min:1', 'max:1000000'], 'public' => true],
             'max_deposit' => ['type' => 'int', 'default' => 500000, 'rules' => ['required', 'integer', 'min:1', 'max:10000000'], 'public' => true],

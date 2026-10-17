@@ -13,7 +13,7 @@ class UploadController extends Controller
     {
         $data = $request->validate([
             'file' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:5120'],
-            'folder' => ['nullable', Rule::in(['banners', 'games', 'promotions', 'posts', 'providers'])],
+            'folder' => ['nullable', Rule::in(['banners', 'games', 'promotions', 'posts', 'providers', 'payments'])],
         ]);
 
         $path = $request->file('file')->store('uploads/' . ($data['folder'] ?? 'misc'), 'public');

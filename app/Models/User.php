@@ -62,6 +62,11 @@ class User extends Authenticatable
         return $this->hasMany(Transaction::class);
     }
 
+    public function payoutAccounts(): HasMany
+    {
+        return $this->hasMany(PayoutAccount::class);
+    }
+
     public function kycSubmissions(): HasMany
     {
         return $this->hasMany(KycSubmission::class);

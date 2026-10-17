@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\ContentController;
 use App\Http\Controllers\Api\V1\GameCategoryController;
 use App\Http\Controllers\Api\V1\GameController;
 use App\Http\Controllers\Api\V1\GameProviderController;
+use App\Http\Controllers\Api\V1\KycController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ProviderWalletController;
 use App\Http\Controllers\Api\V1\WalletController;
@@ -38,6 +39,7 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:600,1');
 
     Route::prefix('content')->group(function () {
+        Route::get('/settings', [ContentController::class, 'settings']);
         Route::get('/banners', [ContentController::class, 'banners']);
         Route::get('/promotions', [ContentController::class, 'promotions']);
         Route::get('/promotions/{slug}', [ContentController::class, 'promotion']);
@@ -49,6 +51,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/me', [ProfileController::class, 'show']);
         Route::put('/me', [ProfileController::class, 'update']);
         Route::put('/me/password', [ProfileController::class, 'password']);
+        Route::get('/me/kyc', [KycController::class, 'show']);
+        Route::post('/me/kyc', [KycController::class, 'store'])->middleware('throttle:5,1');
+        Route::get('/me/history', [WalletController::class, 'history']);
 
         Route::post('/casino/games/{slug}/launch', [GameController::class, 'launch'])->middleware('throttle:20,1');
         Route::post('/casino/sessions/end', [GameController::class, 'endSession']);
@@ -98,6 +103,20 @@ Route::prefix('v1')->group(function () {
             Route::middleware('permission:transactions.process')->group(function () {
                 Route::post('/transactions/{id}/approve', [Admin\TransactionController::class, 'approve'])->whereNumber('id');
                 Route::post('/transactions/{id}/reject', [Admin\TransactionController::class, 'reject'])->whereNumber('id');
+            });
+
+            Route::get('/rounds', [Admin\GameRoundController::class, 'index'])->middleware('permission:transactions.view|games.manage');
+
+            Route::middleware('permission:settings.manage')->group(function () {
+                Route::get('/settings', [Admin\SettingController::class, 'index']);
+                Route::put('/settings', [Admin\SettingController::class, 'update']);
+            });
+
+            Route::middleware('permission:kyc.review')->group(function () {
+                Route::get('/kyc', [Admin\KycController::class, 'index']);
+                Route::get('/kyc/{id}', [Admin\KycController::class, 'show'])->whereNumber('id');
+                Route::get('/kyc/{id}/files/{type}', [Admin\KycController::class, 'file'])->whereNumber('id')->whereIn('type', ['id_front', 'id_back', 'selfie']);
+                Route::post('/kyc/{id}/review', [Admin\KycController::class, 'review'])->whereNumber('id');
             });
 
             Route::middleware('permission:roles.manage')->group(function () {

@@ -26,6 +26,8 @@ class AccessControl
         'transactions.view' => 'View wallet transactions',
         'transactions.process' => 'Approve or reject deposits and withdrawals',
         'roles.manage' => 'Manage roles and permissions',
+        'settings.manage' => 'Manage site, payment and game settings',
+        'kyc.review' => 'Review player identity verification',
     ];
 
     public const DEFAULT_ROLE_PERMISSIONS = [
@@ -36,6 +38,7 @@ class AccessControl
             'content.manage',
             'transactions.view',
             'transactions.process',
+            'kyc.review',
         ],
         self::ROLE_USER => [],
     ];

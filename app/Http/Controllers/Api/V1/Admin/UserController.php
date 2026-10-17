@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Support\AccessControl;
+use App\Support\GameStats;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -87,6 +88,26 @@ class UserController extends ResourceController
     {
         $record->syncRoles([$validated['role']]);
         $record->load('roles:id,name');
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        $user = User::query()->with(['roles:id,name', 'kyc'])->findOrFail($id);
+        $approved = $user->transactions()->where('status', Transaction::STATUS_APPROVED);
+        $scope = fn ($query) => $query->where('user_id', $user->id);
+
+        return $this->success([
+            'user' => array_merge($user->toArray(), ['permissions' => $user->getAllPermissions()->pluck('name')->values()]),
+            'stats' => array_merge(
+                [
+                    'total_deposits' => (float) (clone $approved)->where('type', Transaction::TYPE_DEPOSIT)->sum('amount'),
+                    'total_withdrawals' => (float) (clone $approved)->where('type', Transaction::TYPE_WITHDRAW)->sum('amount'),
+                    'pending_transactions' => $user->transactions()->where('status', Transaction::STATUS_PENDING)->count(),
+                ],
+                GameStats::rounds($scope),
+                GameStats::sessions($scope),
+            ),
+        ], 'User retrieved');
     }
 
     public function destroy(int $id): JsonResponse

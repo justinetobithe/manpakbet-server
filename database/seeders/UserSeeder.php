@@ -18,6 +18,7 @@ class UserSeeder extends Seeder
                 'last_name' => 'User',
                 'phone' => '639171234567',
                 'balance' => 0,
+                'kyc_status' => 'verified',
                 'role' => AccessControl::ROLE_ADMIN,
             ],
             [
@@ -26,6 +27,7 @@ class UserSeeder extends Seeder
                 'last_name' => 'Staff',
                 'phone' => '639171234500',
                 'balance' => 0,
+                'kyc_status' => 'verified',
                 'role' => AccessControl::ROLE_STAFF,
             ],
             [
@@ -34,6 +36,7 @@ class UserSeeder extends Seeder
                 'last_name' => 'Player',
                 'phone' => '639171234568',
                 'balance' => 2500,
+                'kyc_status' => 'verified',
                 'role' => AccessControl::ROLE_USER,
             ],
         ];

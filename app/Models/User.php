@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\AccessControl;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -24,6 +25,8 @@ class User extends Authenticatable
         'password',
         'balance',
         'is_active',
+        'kyc_status',
+        'birthdate',
         'last_login_at',
         'provider',
         'provider_id',
@@ -42,12 +45,14 @@ class User extends Authenticatable
     protected $attributes = [
         'balance' => 0,
         'is_active' => true,
+        'kyc_status' => 'unverified',
     ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
         'phone_verified_at' => 'datetime',
         'last_login_at' => 'datetime',
+        'birthdate' => 'date:Y-m-d',
         'balance' => 'decimal:2',
         'is_active' => 'boolean',
     ];
@@ -55,6 +60,21 @@ class User extends Authenticatable
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function kycSubmissions(): HasMany
+    {
+        return $this->hasMany(KycSubmission::class);
+    }
+
+    public function kyc(): HasOne
+    {
+        return $this->hasOne(KycSubmission::class)->latestOfMany();
+    }
+
+    public function isKycVerified(): bool
+    {
+        return $this->kyc_status === 'verified';
     }
 
     public function isBackoffice(): bool

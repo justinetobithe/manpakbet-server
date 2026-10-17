@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Game;
+use App\Models\KycSubmission;
 use App\Models\Promotion;
 use App\Models\Transaction;
 use App\Models\User;
@@ -43,6 +44,7 @@ class StatsController extends Controller
                     'games' => Game::query()->where('is_active', true)->count(),
                     'active_promotions' => Promotion::query()->running()->count(),
                     'pending_transactions' => Transaction::query()->where('status', Transaction::STATUS_PENDING)->count(),
+                    'pending_kyc' => KycSubmission::query()->where('status', 'pending')->count(),
                     'total_deposits' => (float) (clone $approved)->where('type', Transaction::TYPE_DEPOSIT)->sum('amount'),
                     'total_withdrawals' => (float) (clone $approved)->where('type', Transaction::TYPE_WITHDRAW)->sum('amount'),
                     'player_balance' => (float) User::query()->sum('balance'),

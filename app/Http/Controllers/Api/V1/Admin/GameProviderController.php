@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Models\GameProvider;
+use App\Support\GameStats;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -48,5 +50,23 @@ class GameProviderController extends ResourceController
         $data['sort_order'] = $data['sort_order'] ?? 0;
 
         return $data;
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        $provider = GameProvider::query()
+            ->withCount(['games', 'games as active_games_count' => fn ($q) => $q->where('is_active', true)])
+            ->findOrFail($id);
+
+        $gameIds = $provider->games()->pluck('id');
+        $scope = fn ($query) => $query->whereIn('game_id', $gameIds);
+
+        return $this->success([
+            'provider' => $provider,
+            'stats' => array_merge(GameStats::rounds($scope), GameStats::sessions($scope), [
+                'plays' => (int) $provider->games()->sum('plays_count'),
+            ]),
+            'top_games' => $provider->games()->with('category:id,name,slug')->orderByDesc('plays_count')->limit(12)->get(),
+        ], 'Provider retrieved');
     }
 }

@@ -6,11 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Models\Banner;
 use App\Models\Post;
 use App\Models\Promotion;
+use App\Support\Settings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ContentController extends Controller
 {
+    public function settings(): JsonResponse
+    {
+        return $this->success(Settings::public(), 'Settings retrieved');
+    }
+
     public function banners(Request $request): JsonResponse
     {
         $banners = Banner::query()

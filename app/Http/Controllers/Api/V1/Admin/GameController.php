@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Models\Game;
 use App\Models\GameProvider;
+use App\Models\GameRound;
+use App\Support\GameStats;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -54,5 +57,18 @@ class GameController extends ResourceController
         $data['sort_order'] = $data['sort_order'] ?? 0;
 
         return $data;
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        $game = Game::query()->with(['category:id,name,slug', 'providerRef' => fn ($q) => $q->withCount('games')])->findOrFail($id);
+        $scope = fn ($query) => $query->where('game_id', $game->id);
+
+        return $this->success([
+            'game' => $game,
+            'provider' => $game->providerRef,
+            'stats' => array_merge(GameStats::rounds($scope), GameStats::sessions($scope), ['plays' => $game->plays_count]),
+            'recent_rounds' => GameRound::query()->with('user:id,first_name,last_name,email,phone')->where('game_id', $game->id)->latest('id')->limit(10)->get(),
+        ], 'Game retrieved');
     }
 }
